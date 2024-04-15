@@ -42,7 +42,7 @@ type FireDB struct {
 // Name card prompt
 const ImagePrompt = `
 這是一張名片，你是一個名片秘書。請將以下資訊整理成 json 給我。
-如果看不出來的，幫我填寫 N/A， 只好 json 就好:  
+如果看不出來的，幫我填寫 N/A. 只需要 json 就好:  
 Name, Title, Address, Email, Phone, Company.   
 其中 Phone 的內容格式為 #886-0123-456-789,1234. 沒有分機就忽略 ,1234`
 
@@ -145,8 +145,14 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 					fmt.Println("load memory failed, ", err)
 				}
 
+				// Convert map to slice
+				People := make([]Person, 0, len(AllPeopleCard.People))
+				for _, v := range AllPeopleCard.People {
+					People = append(People, v)
+				}
+
 				// Marshall data to JSON
-				jsonData, err := json.Marshal(AllPeopleCard)
+				jsonData, err := json.Marshal(People)
 				if err != nil {
 					fmt.Println("Error marshalling data to JSON:", err)
 				}
