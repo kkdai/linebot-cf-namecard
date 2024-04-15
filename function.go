@@ -58,6 +58,10 @@ type Person struct {
 	Company string `json:"company"`
 }
 
+type DBCards struct {
+	People map[string]Person `json:"U9b2eb02b523a9c1c9caec5f2efc236df"`
+}
+
 const DBCardPath = "namecard"
 
 func init() {
@@ -104,14 +108,6 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-
-	// // Load all cards from firebase
-	// var AllCards []Person
-	// err = fireDB.NewRef("namecard").Get(ctx, &AllCards)
-	// if err != nil {
-	// 	fmt.Println("load memory failed, ", err)
-	// }
-	// fmt.Println("All Cards: %v", AllCards)
 
 	// Init the Gemini AI client
 	client, err := genai.NewClient(ctx, option.WithAPIKey(geminiKey))
@@ -247,10 +243,38 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 
+				// 取得用戶 ID
+				var uID string
+				switch source := e.Source.(type) {
+				case webhook.UserSource:
+					uID = source.UserId
+				case webhook.GroupSource:
+					uID = source.UserId
+				case webhook.RoomSource:
+					uID = source.UserId
+				}
+				userPath := fmt.Sprintf("%s/%s", DBCardPath, uID)
+
+				// Load all cards from firebase
+				var AllPeopleCard DBCards
+				err = fireDB.NewRef(userPath).Get(ctx, &AllPeopleCard)
+				if err != nil {
+					fmt.Println("load memory failed, ", err)
+				}
+
+				// Marshall data to JSON
+				jsonData, err := json.Marshal(AllPeopleCard)
+				if err != nil {
+					fmt.Println("Error marshalling data to JSON:", err)
+				}
+
+				// Add Search prompt
+				SearchPrompt := fmt.Sprintf("這是所有的名片資料，請根據輸入文字來查詢相關的名片資料 (%s)，例如: 名字, 職稱, 公司名稱。 查詢問句為： %s", jsonData, req)
+
 				// Pass the text content to the gemini-pro model for text generation
 				model := client.GenerativeModel("gemini-pro")
 				cs := model.StartChat()
-				res, err := cs.SendMessage(ctx, genai.Text(req))
+				res, err := cs.SendMessage(ctx, genai.Text(SearchPrompt))
 				if err != nil {
 					log.Fatal(err)
 				}
