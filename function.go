@@ -126,20 +126,34 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 			case webhook.TextMessageContent:
 				req := message.Text
 
-				if message.Text == "test" {
-					people := []Person{
-						{
-							Name:    "test",
-							Title:   "test",
-							Address: "test",
-							Email:   "test",
-							Phone:   "test",
-							Company: "test",
-						},
-					}
+				// 取得用戶 ID
+				var uID string
+				switch source := e.Source.(type) {
+				case webhook.UserSource:
+					uID = source.UserId
+				case webhook.GroupSource:
+					uID = source.UserId
+				case webhook.RoomSource:
+					uID = source.UserId
+				}
+				userPath := fmt.Sprintf("%s/%s", DBCardPath, uID)
 
+				// Load all cards from firebase
+				var AllPeopleCard DBCards
+				err = fireDB.NewRef(userPath).Get(ctx, &AllPeopleCard)
+				if err != nil {
+					fmt.Println("load memory failed, ", err)
+				}
+
+				// Marshall data to JSON
+				jsonData, err := json.Marshal(AllPeopleCard)
+				if err != nil {
+					fmt.Println("Error marshalling data to JSON:", err)
+				}
+
+				if message.Text == "list" {
 					var cards []messaging_api.FlexBubble
-					for _, card := range people {
+					for _, card := range AllPeopleCard.People {
 						// Get URL encode for company name and address
 						companyEncode := url.QueryEscape(card.Company)
 						addressEncode := url.QueryEscape(card.Address)
@@ -243,31 +257,6 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 
-				// 取得用戶 ID
-				var uID string
-				switch source := e.Source.(type) {
-				case webhook.UserSource:
-					uID = source.UserId
-				case webhook.GroupSource:
-					uID = source.UserId
-				case webhook.RoomSource:
-					uID = source.UserId
-				}
-				userPath := fmt.Sprintf("%s/%s", DBCardPath, uID)
-
-				// Load all cards from firebase
-				var AllPeopleCard DBCards
-				err = fireDB.NewRef(userPath).Get(ctx, &AllPeopleCard)
-				if err != nil {
-					fmt.Println("load memory failed, ", err)
-				}
-
-				// Marshall data to JSON
-				jsonData, err := json.Marshal(AllPeopleCard)
-				if err != nil {
-					fmt.Println("Error marshalling data to JSON:", err)
-				}
-
 				// Add Search prompt
 				SearchPrompt := fmt.Sprintf("這是所有的名片資料，請根據輸入文字來查詢相關的名片資料 (%s)，例如: 名字, 職稱, 公司名稱。 查詢問句為： %s", jsonData, req)
 
@@ -293,6 +282,9 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 						Messages: []messaging_api.MessageInterface{
 							&messaging_api.TextMessage{
 								Text: ret,
+							},
+							&messaging_api.TextMessage{
+								Text: string(jsonData),
 							},
 						},
 					},
