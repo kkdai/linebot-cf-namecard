@@ -2,9 +2,11 @@ package helloworld
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"io"
 	"log"
@@ -56,6 +58,8 @@ type Person struct {
 	Company string `json:"company"`
 }
 
+const DBCardPath = "namecard"
+
 func init() {
 	var err error
 	// Init firebase related variables
@@ -101,14 +105,20 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var AllCards []Person
+	// // Load all cards from firebase
+	// var AllCards []Person
+	// err = fireDB.NewRef("namecard").Get(ctx, &AllCards)
+	// if err != nil {
+	// 	fmt.Println("load memory failed, ", err)
+	// }
+	// fmt.Println("All Cards: %v", AllCards)
 
-	err = fireDB.NewRef("namecard").Get(ctx, &AllCards)
+	// Init the Gemini AI client
+	client, err := genai.NewClient(ctx, option.WithAPIKey(geminiKey))
 	if err != nil {
-		fmt.Println("load memory failed, ", err)
+		log.Fatal(err)
 	}
-
-	fmt.Println("InMemory: %v", AllCards)
+	defer client.Close()
 
 	for _, event := range cb.Events {
 		log.Printf("Got event %v", event)
@@ -239,13 +249,6 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 
-				ctx := context.Background()
-				client, err := genai.NewClient(ctx, option.WithAPIKey(geminiKey))
-				if err != nil {
-					log.Fatal(err)
-				}
-				defer client.Close()
-
 				// Pass the text content to the gemini-pro model for text generation
 				model := client.GenerativeModel("gemini-pro")
 				cs := model.StartChat()
@@ -278,8 +281,18 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 
 			// Handle only image messages
 			case webhook.ImageMessageContent:
-				log.Println("Got img msg ID:", message.Id)
+				// 取得用戶 ID
+				var uID string
+				switch source := e.Source.(type) {
+				case webhook.UserSource:
+					uID = source.UserId
+				case webhook.GroupSource:
+					uID = source.UserId
+				case webhook.RoomSource:
+					uID = source.UserId
+				}
 
+				log.Println("Got img msg ID:", message.Id)
 				// Get image content through message.Id
 				content, err := blob.GetMessageContent(message.Id)
 				if err != nil {
@@ -291,22 +304,27 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					log.Fatal(err)
 				}
-				ctx := context.Background()
-				client, err := genai.NewClient(ctx, option.WithAPIKey(geminiKey))
-				if err != nil {
-					log.Fatal(err)
-				}
-				defer client.Close()
 
 				// Pass the image content to the gemini-pro-vision model for image description
 				model := client.GenerativeModel("gemini-pro-vision")
 				prompt := []genai.Part{
 					genai.ImageData("png", data),
-					genai.Text("Describe this image with scientific detail, reply in zh-TW:"),
+					genai.Text(ImagePrompt),
 				}
 				resp, err := model.GenerateContent(ctx, prompt...)
 				if err != nil {
+					retStr := "無法辨識圖片內容文字，請重新輸入:" + err.Error()
 					log.Fatal(err)
+					bot.ReplyMessage(
+						&messaging_api.ReplyMessageRequest{
+							ReplyToken: e.ReplyToken,
+							Messages: []messaging_api.MessageInterface{
+								&messaging_api.TextMessage{
+									Text: retStr,
+								},
+							},
+						},
+					)
 				}
 
 				// Get the returned content
@@ -318,13 +336,32 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 
+				// Remove first and last line,	which are the backticks.
+				lines := strings.Split(ret, "\n")
+				jsonData := strings.Join(lines[1:len(lines)-1], "\n")
+				log.Println("Got jsonData:", jsonData)
+
+				// Parse json and insert NotionDB
+				var person Person
+				err = json.Unmarshal([]byte(jsonData), &person)
+				if err != nil {
+					log.Println("Error parsing JSON:", err)
+				}
+
+				// Insert the person data into firebase
+				userPath := fmt.Sprintf("%s/%s", DBCardPath, uID)
+				_, err = fireDB.NewRef(userPath).Push(ctx, person)
+				if err != nil {
+					log.Println("Error inserting data into firebase:", err)
+				}
+
 				// Reply message
 				if _, err := bot.ReplyMessage(
 					&messaging_api.ReplyMessageRequest{
 						ReplyToken: e.ReplyToken,
 						Messages: []messaging_api.MessageInterface{
 							&messaging_api.TextMessage{
-								Text: ret,
+								Text: jsonData,
 							},
 						},
 					},
