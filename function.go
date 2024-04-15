@@ -23,7 +23,6 @@ import (
 
 // Define the context
 var fireDB FireDB
-var Memory []*genai.Content
 
 // LINE BOt sdk
 var bot *messaging_api.MessagingApiAPI
@@ -36,12 +35,6 @@ var geminiKey string
 // define firebase db
 type FireDB struct {
 	*db.Client
-}
-
-// Define your custom struct for Gemini ChatMemory
-type GeminiChat struct {
-	Parts []string `json:"parts"`
-	Role  string   `json:"role"`
 }
 
 // Name card prompt
@@ -135,6 +128,7 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 							Address: "test",
 							Email:   "test",
 							Phone:   "test",
+							Company: "test",
 						},
 					}
 					// if err := SendFlexMsg(e.ReplyToken, cards, "test card"); err != nil {
@@ -255,8 +249,6 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 				// Pass the text content to the gemini-pro model for text generation
 				model := client.GenerativeModel("gemini-pro")
 				cs := model.StartChat()
-				cs.History = Memory
-
 				res, err := cs.SendMessage(ctx, genai.Text(req))
 				if err != nil {
 					log.Fatal(err)
@@ -267,29 +259,6 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 						ret = ret + fmt.Sprintf("%v", part)
 						log.Println(part)
 					}
-				}
-
-				// Save the conversation to the memory
-				Memory = append(Memory, &genai.Content{
-					Parts: []genai.Part{
-						genai.Text(req),
-					},
-					Role: "user",
-				})
-
-				// Save the response to the memory
-				Memory = append(Memory, &genai.Content{
-					Parts: []genai.Part{
-						genai.Text(ret),
-					},
-					Role: "model",
-				})
-
-				// Save the conversation to the firebase
-				err = fireDB.NewRef("BwAI").Set(ctx, Memory)
-				if err != nil {
-					fmt.Println(err)
-					return
 				}
 
 				// Reply message
