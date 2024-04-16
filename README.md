@@ -1,45 +1,57 @@
-# LINE Bot with Firebase and Generative AI
+LINE Bot 使用 Google Gemini Pro 跟 Firebase Database 來做的名片小幫手
+---
 
-This project is a LINE bot implemented in Go, using Firebase as a database and Google's Generative AI for text and image processing.
+ [![GoDoc](https://godoc.org/github.com/kkdai/linebot-cf-namecard.svg?status.svg)](https://godoc.org/github.com/kkdai/linebot-cf-namecard)   ![Go](https://github.com/kkdai/linebot-cf-namecard/workflows/Go/badge.svg) [![goreportcard.com](https://goreportcard.com/badge/github.com/kkdai/linebot-cf-namecard)](https://goreportcard.com/report/github.com/kkdai/linebot-cf-namecard)
 
-# Features
+### LINE Bot Screen
 
-- Text processing: The bot can receive text messages, process them using Google's Generative AI, and respond with generated text.
-- Image processing: The bot can receive image messages, process them using Google's Generative AI, and respond with a description of the image.
-- Firebase integration: The bot uses Firebase as a database to store the conversation history.
+#### Add new card into DB
 
-# Getting Started
+![](img/add_card.jpg)
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+#### Search keyword by Neural Language
 
-# Prerequisites
+![](img/query.jpg)
 
-- Go
-- Firebase account
-- LINE Messaging API account
-- Google Generative AI account
 
-## Installing
 
-- Clone the repository
-- Install the dependencies with go get
-- Set up your Firebase and LINE Messaging API credentials in your environment variables
-- Run the bot with go run function.go
+## 如何快速架設在自己平台
 
-## Usage
+請根據以下的流程，來直接透過開源的程式碼來架設一個 LINEBot 跟 GCP  STT 與 GCS (Google Cloud Storage) 的結合。
 
-The bot can be added to a LINE chat. It will respond to text and image messages with generated content.
+### 事前準備
 
-# Contributing
+- [LINE Developers 帳號](https://developers.line.biz/console/)
+  - 到 [LINE Developers Console](https://developers.line.biz/console/) 透過你的 LINE 帳號登入。
+  - 開啟 LINE Developers 帳號
+  - 開啟一個官方帳號 Message API Channel 並且取得 `channel secret` 與 `channel access token`。 請[參考這篇教學](https://developers.line.biz/en/docs/messaging-api/getting-started/#using-console)。
+- 需要一個收費的 [Google Cloud Platform](https://cloud.google.com/) 帳號，並且取得 GCP JSON key file ，更多詳細流程請參考 [Cloud Storage client libraries](https://cloud.google.com/storage/docs/reference/libraries)。
 
-Please read CONTRIBUTING.md for details on our code of conduct, and the process for submitting pull requests to us.
+### 開始部署
 
-# License
+- 參考本篇設定文章 - [[BwAI workshop][Golang] LINE OA + CloudFunction + GeminiPro + Firebase = 旅行小幫手 LINE 聊天機器人(2)： Firebase Database 讓 LINEBot 有個超長記憶](https://www.evanlin.com/linebot-cloudfunc-firebase-gemini-workshop2/)
 
-This project is licensed under the MIT License - see the LICENSE.md file for details
+### 如何使用
 
-# Acknowledgments
+- **傳送名片照片：** 會自動透過 Gemini Pro 辨識之後，將結果上傳到 Firebase Database.
+- **查詢名片**： 可以透過口語的方式來查詢名片。（e.g. 幫我找在 LINE 工作的人)
 
-LINE Messaging API
-Google Generative AI
-Firebase
+### 完整開發教學
+
+- [[BwAI workshop][Golang] LINE OA + CloudFunction + GeminiPro + Firebase = 旅行小幫手 LINE 聊天機器人(1)： 景色辨識小幫手](https://www.evanlin.com/linebot-cloudfunc-firebase-gemini-workshop/)
+- [[BwAI workshop][Golang] LINE OA + CloudFunction + GeminiPro + Firebase = 旅行小幫手 LINE 聊天機器人(2)： Firebase Database 讓 LINEBot 有個超長記憶](https://www.evanlin.com/linebot-cloudfunc-firebase-gemini-workshop2/)
+
+License
+---------------
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+<http://www.apache.org/licenses/LICENSE-2.0>
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
