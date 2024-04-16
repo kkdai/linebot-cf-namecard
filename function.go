@@ -58,10 +58,6 @@ type Person struct {
 	Company string `json:"company"`
 }
 
-type DBCards struct {
-	People map[string]Person `json:"U9b2eb02b523a9c1c9caec5f2efc236df"`
-}
-
 const DBCardPath = "namecard"
 
 func init() {
@@ -139,16 +135,10 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 				userPath := fmt.Sprintf("%s/%s", DBCardPath, uID)
 
 				// Load all cards from firebase
-				var AllPeopleCard DBCards
-				err = fireDB.NewRef(userPath).Get(ctx, &AllPeopleCard)
+				var People map[string]Person
+				err = fireDB.NewRef(userPath).Get(ctx, &People)
 				if err != nil {
 					fmt.Println("load memory failed, ", err)
-				}
-
-				// Convert map to slice
-				People := make([]Person, 0, len(AllPeopleCard.People))
-				for _, v := range AllPeopleCard.People {
-					People = append(People, v)
 				}
 
 				// Marshall data to JSON
@@ -159,7 +149,7 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 
 				if message.Text == "list" {
 					var cards []messaging_api.FlexBubble
-					for _, card := range AllPeopleCard.People {
+					for _, card := range People {
 						// Get URL encode for company name and address
 						companyEncode := url.QueryEscape(card.Company)
 						addressEncode := url.QueryEscape(card.Address)
