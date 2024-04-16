@@ -254,7 +254,7 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 
 				// Add Search prompt
-				SearchPrompt := fmt.Sprintf("這是所有的名片資料，請根據輸入文字來查詢相關的名片資料 (%s)，例如: 名字, 職稱, 公司名稱。 查詢問句為： %s", jsonData, req)
+				SearchPrompt := fmt.Sprintf("這是所有的名片資料，請根據輸入文字來查詢相關的名片資料 (%s)，例如: 名字, 職稱, 公司名稱。 查詢問句為： %s, 只要回覆我找到的 JSON Data", jsonData, req)
 
 				// Pass the text content to the gemini-pro model for text generation
 				model := client.GenerativeModel("gemini-pro")
@@ -270,6 +270,98 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 						log.Println(part)
 					}
 				}
+				var retPeople map[string]Person
+				// unmarshall json to People
+				err = json.Unmarshal([]byte(ret), &retPeople)
+				if err != nil {
+					log.Println("Error parsing JSON:", err)
+				}
+
+				var cards []messaging_api.FlexBubble
+				for _, card := range People {
+					// Get URL encode for company name and address
+					companyEncode := url.QueryEscape(card.Company)
+					addressEncode := url.QueryEscape(card.Address)
+
+					card := messaging_api.FlexBubble{
+						Size: messaging_api.FlexBubbleSIZE_GIGA,
+						Body: &messaging_api.FlexBox{
+							Layout:  messaging_api.FlexBoxLAYOUT_HORIZONTAL,
+							Spacing: "md",
+							Contents: []messaging_api.FlexComponentInterface{
+								&messaging_api.FlexImage{
+									AspectMode:  "cover",
+									AspectRatio: "1:1",
+									Flex:        1,
+									Size:        "full",
+									Url:         LogoImageUrl,
+								},
+								&messaging_api.FlexBox{
+									Flex:   4,
+									Layout: messaging_api.FlexBoxLAYOUT_VERTICAL,
+									Contents: []messaging_api.FlexComponentInterface{
+										&messaging_api.FlexText{
+											Align:  "end",
+											Size:   "xxl",
+											Text:   card.Name,
+											Weight: "bold",
+										},
+										&messaging_api.FlexText{
+											Align: "end",
+											Size:  "sm",
+											Text:  card.Title,
+										},
+										&messaging_api.FlexText{
+											Align:  "end",
+											Margin: "xxl",
+											Size:   "lg",
+											Text:   card.Company,
+											Weight: "bold",
+											Action: &messaging_api.UriAction{
+												Uri: "https://www.google.com/maps/search/?api=1&query=" + companyEncode + "&openExternalBrowser=1",
+											},
+										},
+										&messaging_api.FlexText{
+											Align: "end",
+											Size:  "sm",
+											Text:  card.Address,
+											Action: &messaging_api.UriAction{
+												Uri: "https://www.google.com/maps/search/?api=1&query=" + addressEncode + "&openExternalBrowser=1",
+											},
+										},
+										&messaging_api.FlexText{
+											Align:  "end",
+											Margin: "xxl",
+											Text:   card.Phone,
+											Action: &messaging_api.UriAction{
+												Uri: "tel:" + card.Phone,
+											},
+										},
+										&messaging_api.FlexText{
+											Align: "end",
+											Text:  card.Email,
+											Action: &messaging_api.UriAction{
+												Uri: "mailto:" + card.Email,
+											},
+										},
+										&messaging_api.FlexText{
+											Align: "end",
+											Text:  "更多資訊",
+											Action: &messaging_api.UriAction{
+												Uri: "https://github.com/kkdai/linebot-smart-namecard",
+											},
+										},
+									},
+								},
+							},
+						},
+					}
+					cards = append(cards, card)
+				}
+
+				contents := &messaging_api.FlexCarousel{
+					Contents: cards,
+				}
 
 				// Reply message
 				if _, err := bot.ReplyMessage(
@@ -279,8 +371,9 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 							&messaging_api.TextMessage{
 								Text: ret,
 							},
-							&messaging_api.TextMessage{
-								Text: string(jsonData),
+							&messaging_api.FlexMessage{
+								Contents: contents,
+								AltText:  "請到手機上查看名片資訊",
 							},
 						},
 					},
