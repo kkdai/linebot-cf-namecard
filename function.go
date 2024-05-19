@@ -149,7 +149,12 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 
 				if message.Text == "list" {
 					var cards []messaging_api.FlexBubble
+					i := 0
 					for _, card := range People {
+						i++
+						if i > 8 {
+							break
+						}
 						// Get URL encode for company name and address
 						companyEncode := url.QueryEscape(card.Company)
 
@@ -235,7 +240,7 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 							ReplyToken: e.ReplyToken,
 							Messages: []messaging_api.MessageInterface{
 								&messaging_api.TextMessage{
-									Text: "測試訊息",
+									Text: "測試訊息(只會顯示前9筆資料)",
 								},
 								&messaging_api.FlexMessage{
 									Contents: contents,
