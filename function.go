@@ -270,9 +270,18 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 						log.Println(part)
 					}
 				}
+
+				// Print original result.
+				log.Println("Find reply data:", ret)
+
+				// Remove first and last line,	which are the backticks.
+				lines := strings.Split(ret, "\n")
+				jsonData2 := strings.Join(lines[1:len(lines)-1], "\n")
+				log.Println("Got jsonData:", jsonData2)
+
 				var retPeople map[string]Person
 				// unmarshall json to People
-				err = json.Unmarshal([]byte(ret), &retPeople)
+				err = json.Unmarshal([]byte(jsonData2), &retPeople)
 				if err != nil {
 					fmt.Println("Unmarshal failed, ", err, "jsonData:", ret)
 				}
