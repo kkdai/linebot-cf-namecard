@@ -256,8 +256,8 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 				// Add Search prompt
 				SearchPrompt := fmt.Sprintf("這是所有的名片資料，請根據輸入文字來查詢相關的名片資料 (%s)，例如: 名字, 職稱, 公司名稱。 查詢問句為： %s, 只要回覆我找到的 JSON Data", jsonData, req)
 
-				// Pass the text content to the gemini-pro model for text generation
-				model := client.GenerativeModel("gemini-pro")
+				// Pass the text content to the gemini-1.5-flash-latest model for text generation
+				model := client.GenerativeModel("gemini-1.5-flash-latest")
 				res, err := model.GenerateContent(ctx, genai.Text(SearchPrompt))
 				if err != nil {
 					log.Fatal(err)
@@ -407,8 +407,8 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 					log.Fatal(err)
 				}
 
-				// Pass the image content to the gemini-pro-vision model for image description
-				model := client.GenerativeModel("gemini-pro-vision")
+				// Pass the image content to the gemini-1.5-flash-latest model for image description
+				model := client.GenerativeModel("gemini-1.5-flash-latest")
 				prompt := []genai.Part{
 					genai.ImageData("png", data),
 					genai.Text(ImagePrompt),
@@ -437,6 +437,8 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 						log.Println(part)
 					}
 				}
+				// Print original result.
+				log.Println(ret)
 
 				// Remove first and last line,	which are the backticks.
 				lines := strings.Split(ret, "\n")
