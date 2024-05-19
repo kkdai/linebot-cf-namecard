@@ -285,12 +285,16 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					fmt.Println("Unmarshal failed, ", err, "jsonData:", ret)
 				}
+				for _, card := range retPeople {
+					log.Println(card)
+				}
 
 				var cards []messaging_api.FlexBubble
+				i := 0
 				for _, card := range retPeople {
-					// Get URL encode for company name and address
-					companyEncode := url.QueryEscape(card.Company)
-					addressEncode := url.QueryEscape(card.Address)
+					if i > 8 {
+						break
+					}
 
 					card := messaging_api.FlexBubble{
 						Size: messaging_api.FlexBubbleSIZE_GIGA,
@@ -326,32 +330,20 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 											Size:   "lg",
 											Text:   card.Company,
 											Weight: "bold",
-											Action: &messaging_api.UriAction{
-												Uri: "https://www.google.com/maps/search/?api=1&query=" + companyEncode + "&openExternalBrowser=1",
-											},
 										},
 										&messaging_api.FlexText{
 											Align: "end",
 											Size:  "sm",
 											Text:  card.Address,
-											Action: &messaging_api.UriAction{
-												Uri: "https://www.google.com/maps/search/?api=1&query=" + addressEncode + "&openExternalBrowser=1",
-											},
 										},
 										&messaging_api.FlexText{
 											Align:  "end",
 											Margin: "xxl",
 											Text:   card.Phone,
-											Action: &messaging_api.UriAction{
-												Uri: "tel:" + card.Phone,
-											},
 										},
 										&messaging_api.FlexText{
 											Align: "end",
 											Text:  card.Email,
-											Action: &messaging_api.UriAction{
-												Uri: "mailto:" + card.Email,
-											},
 										},
 										&messaging_api.FlexText{
 											Align: "end",
