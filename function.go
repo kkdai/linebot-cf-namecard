@@ -273,7 +273,7 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 				// unmarshall json to People
 				err = json.Unmarshal([]byte(ret), &retPeople)
 				if err != nil {
-					log.Println("Error parsing JSON:", err)
+					fmt.Println("Unmarshal failed, ", err, "jsonData:", ret)
 				}
 
 				var cards []messaging_api.FlexBubble
@@ -449,7 +449,7 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 				var person Person
 				err = json.Unmarshal([]byte(jsonData), &person)
 				if err != nil {
-					log.Println("Error parsing JSON:", err)
+					fmt.Println("Unmarshal failed, ", err, "jsonData:", jsonData)
 				}
 
 				people := []Person{person}
