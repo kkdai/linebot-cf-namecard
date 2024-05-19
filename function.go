@@ -196,9 +196,6 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 												Align: "end",
 												Size:  "sm",
 												Text:  card.Address,
-												Action: &messaging_api.UriAction{
-													Uri: "https://www.google.com/maps/search/?api=1&query=" + addressEncode + "&openExternalBrowser=1",
-												},
 											},
 											&messaging_api.FlexText{
 												Align:  "end",
