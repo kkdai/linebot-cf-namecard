@@ -152,7 +152,6 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 					for _, card := range People {
 						// Get URL encode for company name and address
 						companyEncode := url.QueryEscape(card.Company)
-						addressEncode := url.QueryEscape(card.Address)
 
 						card := messaging_api.FlexBubble{
 							Size: messaging_api.FlexBubbleSIZE_GIGA,
